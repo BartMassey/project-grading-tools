@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser(
     description='Clone a student project repo for grading',
 )
 parser.add_argument("--overwrite-grading", action="store_true")
+parser.add_argument("--both", action="store_true")
 parser.add_argument("filename")
 args = parser.parse_args()
 
@@ -30,21 +31,34 @@ for zipinfo in project_archive.infolist():
 f = open("failures.csv", "w")
 failures = csv.writer(f)
 
-sdest = Path("staged")
-if not sdest.is_dir():
-    sdest.mkdir(mode=0o700)
-gdest = Path("graded")
-if not gdest.is_dir():
-    gdest.mkdir(mode=0o700)
+def mkfdir(root):
+    fdest = Path(root)
+    if not fdest.is_dir():
+        fdest.mkdir(mode=0o700)
+    return fdest
+
+sdest = mkfdir("staged")
+gdest = mkfdir("graded")
+if args.both:
+    broot = Path("both")
+    if not broot.is_dir():
+        print("no 'both' symlink: giving up")
+        exit(1)
+    bdest = mkfdir(broot / "graded")
 for user, link, slug, body in projects:
     spath = sdest / slug
     has_spath = spath.is_dir()
     gpath = gdest / slug
     has_gpath = gpath.is_dir()
+    if args.both:
+        bpath = bdest / slug
+        has_bpath = bpath.is_dir()
     clone = False
     path = spath
     if has_gpath:
         path = gpath
+    elif has_bpath:
+        path = bpath
     elif not has_spath:
         clone = True
     if clone:
