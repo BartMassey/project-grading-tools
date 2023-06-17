@@ -10,8 +10,18 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("--overwrite-grading", action="store_true")
 parser.add_argument("--both", action="store_true")
+parser.add_argument("--slugmap", action="store_true")
 parser.add_argument("filename")
 args = parser.parse_args()
+
+slugmap_file = Path("slugmap.csv")
+slugmap = dict()
+if slugmap_file.is_file():
+    assert not args.slugmap, "slugmap.csv exists"
+    with open(slugmap_file) as f:
+        for slug0, slug, link in csv.reader(f):
+            if slug0 != slug:
+                slugmap[slug0] = slug
 
 project_archive = zipfile.ZipFile(args.filename)
 projects = []
@@ -22,11 +32,20 @@ for zipinfo in project_archive.infolist():
     if linkinfo:
         linkage = [linkinfo[c] for c in [1, 2, 3]]
         _, _, slug = linkage
+        if slug in slugmap:
+            slug = slugmap[slug]
         link = '/'.join(linkage)
         projects.append((user, link, slug, body))
     else:
         print("{user}: could not find link in body")
         print(body)
+
+if args.slugmap:
+    with open(slugmap_file, "x") as f:
+        slugmap = csv.writer(f)
+        for user, link, slug, body in projects:
+            slugmap.writerow([slug, slug, link])
+    exit(0)
 
 f = open("failures.csv", "w")
 failures = csv.writer(f)
@@ -50,6 +69,7 @@ for user, link, slug, body in projects:
     has_spath = spath.is_dir()
     gpath = gdest / slug
     has_gpath = gpath.is_dir()
+    has_bpath = False
     if args.both:
         bpath = bdest / slug
         has_bpath = bpath.is_dir()
@@ -60,6 +80,7 @@ for user, link, slug, body in projects:
     elif has_bpath:
         path = bpath
     elif not has_spath:
+        has_spath = True
         clone = True
     if clone:
         print(f'clone {link}: ', end="", flush=True)
@@ -86,7 +107,7 @@ for user, link, slug, body in projects:
             continue
     
     grading = path / "GRADING.txt"
-    if not grading.is_file() or args.overwrite_grading:
+    if not grading.is_file() or (args.overwrite_grading and has_spath):
         with open(grading, "w") as gr:
             print("Project Name", file=gr)
             print("Member Names", file=gr)
