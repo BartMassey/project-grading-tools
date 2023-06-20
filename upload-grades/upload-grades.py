@@ -8,9 +8,10 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument('--check', action='store_true')
 parser.add_argument('--test', action='store_true')
+parser.add_argument('--both', action='store_true')
 parser.add_argument('--baseurl', default="canvas.pdx.edu")
-parser.add_argument('courseid')
-parser.add_argument('asgid')
+parser.add_argument('courseid', nargs='?')
+parser.add_argument('asgid', nargs='?')
 args = parser.parse_args()
 
 with open("students.csv", "r") as f:
@@ -19,7 +20,10 @@ with open("students.csv", "r") as f:
 
 grades = dict()
 comments = dict()
-for project in Path("graded").iterdir():
+projects = list(Path("graded").iterdir())
+if args.both:
+    projects += list(Path("both").iterdir())
+for project in projects:
     fgrading = project / "GRADING.txt"
     with fgrading.open() as f:
         grading = f.read()
@@ -42,6 +46,8 @@ for project in Path("graded").iterdir():
 
 if args.check:
     exit(0)
+
+assert args.courseid and args.asgid, "need course and assignment ids"
 
 grader = canvasgrader.CanvasGrader(
     args.baseurl,
