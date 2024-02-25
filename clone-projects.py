@@ -10,42 +10,41 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("--overwrite-grading", action="store_true")
 parser.add_argument("--both", action="store_true")
-parser.add_argument("--slugmap", action="store_true")
-parser.add_argument("filename")
+parser.add_argument("--force-slugmap", action="store_true")
+parser.add_argument("filename", nargs="?")
 args = parser.parse_args()
 
 slugmap_file = Path("slugmap.csv")
 slugmap = dict()
-if slugmap_file.is_file():
-    assert not args.slugmap, "slugmap.csv exists"
-    with open(slugmap_file) as f:
-        for slug0, slug, link in csv.reader(f):
-            if slug0 != slug:
-                slugmap[slug0] = slug
+if args.filename:
+    if slugmap_file.is_file():
+        assert args.force_slugmap, "slugmap.csv exists"
+        project_archive = zipfile.ZipFile(args.filename)
+        projects = []
+        for zipinfo in project_archive.infolist():
+            user = re.sub(r"_.*$", r"", zipinfo.filename)
+            body = str(project_archive.read(zipinfo))
+            linkinfo = re.search(r'(https://git[^"/]*)/([^"/]+)/([^"/ <]+)(\.git)?', body)
+            userline = re.search(r'<h1>.*: (.*)</h1>', body)
+            username = userline[1]
+            if linkinfo:
+                linkage = [linkinfo[c] for c in [1, 2, 3]]
+                _, _, slug = linkage
+                if slug in slugmap:
+                    slug = slugmap[slug]
+                link = '/'.join(linkage)
+                projects.append((user, username, slug, link, body))
+            else:
+                print(f"{user}: could not find link in body")
+        with open(slugmap_file, "w") as f:
+            slugmap = csv.writer(f)
+            for user, username, slug, link, body in projects:
+                slugmap.writerow([user, username, slug, slug, link])
+        exit(0)
 
-project_archive = zipfile.ZipFile(args.filename)
-projects = []
-for zipinfo in project_archive.infolist():
-    user = re.sub(r"_.*$", r"", zipinfo.filename)
-    body = str(project_archive.read(zipinfo))
-    linkinfo = re.search(r'href="(https://git[^"/]*)/([^"/]+)/([^"/]+)(/[^"]*)?"', body)
-    if linkinfo:
-        linkage = [linkinfo[c] for c in [1, 2, 3]]
-        _, _, slug = linkage
-        if slug in slugmap:
-            slug = slugmap[slug]
-        link = '/'.join(linkage)
-        projects.append((user, link, slug, body))
-    else:
-        print("{user}: could not find link in body")
-        print(body)
-
-if args.slugmap:
-    with open(slugmap_file, "x") as f:
-        slugmap = csv.writer(f)
-        for user, link, slug, body in projects:
-            slugmap.writerow([slug, slug, link])
-    exit(0)
+with open(slugmap_file) as f:
+    for user, username, slug, name, link in csv.reader(f):
+        slugmap[slug] = (user, username, link, slug, name)
 
 f = open("failures.csv", "w")
 failures = csv.writer(f)
@@ -64,7 +63,7 @@ if args.both:
         print("no 'both' symlink: giving up")
         exit(1)
     bdest = mkfdir(broot / "graded")
-for user, link, slug, body in projects:
+for user, username, link, slug, name in slugmap.values():
     spath = sdest / slug
     has_spath = spath.is_dir()
     gpath = gdest / slug
@@ -102,15 +101,14 @@ for user, link, slug, body in projects:
             for l in proc.stderr.splitlines():
                 if re.match("remote:.[A-Z]", l):
                     print(l.strip())
-            print()
-            print(body)
+            print(username)
             continue
     
     grading = path / "GRADING.txt"
     if not grading.is_file() or (args.overwrite_grading and has_spath):
         with open(grading, "w") as gr:
-            print("Project Name", file=gr)
-            print("Member Names", file=gr)
+            print(name, file=gr)
+            print(username, file=gr)
             print(link, file=gr)
             print("-", file=gr)
             print(file=gr)
