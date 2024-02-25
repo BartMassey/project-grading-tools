@@ -1,7 +1,7 @@
 * https://canvas.pdx.edu/profile/settings to generate Canvas
   API token
 * Store Canvas API token in ~/.canvastoken
-* Go to my local fork /local/src/old/canvasgrader (for now)
+* Clone my fork http://github.com/BartMassey-upstream/canvasgrader (for now)
   and run `pip install .`
 * Working in the project grading directory:
     * Go to https://canvas.pdx.edu/<course-id>/students
