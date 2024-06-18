@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--overwrite-grading", action="store_true")
 parser.add_argument("--both", action="store_true")
 parser.add_argument("--force-slugmap", action="store_true")
+parser.add_argument("--project-name")
 parser.add_argument("filename", nargs="?")
 args = parser.parse_args()
 
@@ -39,6 +40,8 @@ if args.filename:
     with open(slugmap_file, "w") as f:
         slugmap = csv.writer(f)
         for user, username, slug, link, body in projects:
+            if args.project_name:
+                slug = user
             slugmap.writerow([user, username, slug, slug, link])
     exit(0)
 
@@ -107,7 +110,10 @@ for user, username, link, slug, name in slugmap.values():
     grading = path / "GRADING.txt"
     if not grading.is_file() or (args.overwrite_grading and has_spath):
         with open(grading, "w") as gr:
-            print(name, file=gr)
+            if args.project_name:
+                print(args.project_name, file=gr)
+            else:
+                print(name, file=gr)
             print(username, file=gr)
             print(link, file=gr)
             print("-", file=gr)
