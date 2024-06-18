@@ -19,28 +19,28 @@ slugmap = dict()
 if args.filename:
     if slugmap_file.is_file():
         assert args.force_slugmap, "slugmap.csv exists"
-        project_archive = zipfile.ZipFile(args.filename)
-        projects = []
-        for zipinfo in project_archive.infolist():
-            user = re.sub(r"_.*$", r"", zipinfo.filename)
-            body = str(project_archive.read(zipinfo))
-            linkinfo = re.search(r'(https://git[^"/]*)/([^"/]+)/([^"/ <]+)(\.git)?', body)
-            userline = re.search(r'<h1>.*: (.*)</h1>', body)
-            username = userline[1]
-            if linkinfo:
-                linkage = [linkinfo[c] for c in [1, 2, 3]]
-                _, _, slug = linkage
-                if slug in slugmap:
-                    slug = slugmap[slug]
-                link = '/'.join(linkage)
-                projects.append((user, username, slug, link, body))
-            else:
-                print(f"{user}: could not find link in body")
-        with open(slugmap_file, "w") as f:
-            slugmap = csv.writer(f)
-            for user, username, slug, link, body in projects:
-                slugmap.writerow([user, username, slug, slug, link])
-        exit(0)
+    project_archive = zipfile.ZipFile(args.filename)
+    projects = []
+    for zipinfo in project_archive.infolist():
+        user = re.sub(r"_.*$", r"", zipinfo.filename)
+        body = str(project_archive.read(zipinfo))
+        linkinfo = re.search(r'(https://git[^"/]*)/([^"/]+)/([^"/ <]+)(\.git)?', body)
+        userline = re.search(r'<h1>.*: (.*)</h1>', body)
+        username = userline[1]
+        if linkinfo:
+            linkage = [linkinfo[c] for c in [1, 2, 3]]
+            _, _, slug = linkage
+            if slug in slugmap:
+                slug = slugmap[slug]
+            link = '/'.join(linkage)
+            projects.append((user, username, slug, link, body))
+        else:
+            print(f"{user}: could not find link in body")
+    with open(slugmap_file, "w") as f:
+        slugmap = csv.writer(f)
+        for user, username, slug, link, body in projects:
+            slugmap.writerow([user, username, slug, slug, link])
+    exit(0)
 
 with open(slugmap_file) as f:
     for user, username, slug, name, link in csv.reader(f):
