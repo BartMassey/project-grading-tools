@@ -8,11 +8,30 @@ parser = argparse.ArgumentParser(
     prog='clone-projects',
     description='Clone a student project repo for grading',
 )
-parser.add_argument("--overwrite-grading", action="store_true")
-parser.add_argument("--both", action="store_true")
-parser.add_argument("--force-slugmap", action="store_true")
-parser.add_argument("--project-name")
-parser.add_argument("filename", nargs="?")
+parser.add_argument(
+    "--overwrite-grading",
+    help="allow overwriting GRADING.txt files",
+    action="store_true",
+)
+parser.add_argument(
+    "--both",
+    help="kludge for projects submitted to more than one course",
+    action="store_true",
+)
+parser.add_argument(
+    "--force-slugmap",
+    help="overwrite existing slugmap when used with submissions file",
+    action="store_true",
+)
+parser.add_argument(
+    "--project-name",
+    help="force the official project name rather than inferring it",
+)
+parser.add_argument(
+    "filename",
+    help="submission filename, normally submissions.zip",
+    nargs="?",
+)
 args = parser.parse_args()
 
 slugmap_file = Path("slugmap.csv")
