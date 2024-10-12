@@ -98,13 +98,12 @@ for user, username, link, slug, name in slugmap.values():
         if proc.returncode == 0:
             print("ok")
         else:
-            print("failed")
             print()
             failures.writerow([slug, link, user])
             for l in proc.stderr.splitlines():
                 if re.match("remote:.[A-Z]", l):
                     print(l.strip())
-            print(username)
+            print("failed", username)
             continue
     
     grading = path / "GRADING.txt"
