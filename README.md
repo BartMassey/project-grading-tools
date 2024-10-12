@@ -31,5 +31,9 @@ will not try to re-clone already-successfully-cloned
 projects, nor re-create already-created grading directories
 and files.
 
-Various scripts for things are also here, and should be
+The `autograding.py` script here will update the
+`GRADING.txt` for *initial* portfolio-style project
+submissions based on simple heuristics.
+
+Various other scripts for things are also here, and should be
 documented.
