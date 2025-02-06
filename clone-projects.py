@@ -4,6 +4,8 @@
 import argparse, csv, re, subprocess, sys, zipfile
 from pathlib import Path
 
+import caseconverter
+
 parser = argparse.ArgumentParser(
     prog='clone-projects',
     description='Clone a student project repo for grading',
@@ -34,6 +36,20 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
+def slugify(slug):
+    slug = re.sub(r"\.git$", "", slug)
+    slug = caseconverter.kebabcase(slug)
+    slug = slug.lower()
+    return slug
+
+def nameify(slug):
+    slug = re.sub(r"\.git$", "", slug)
+    slug = caseconverter.snakecase(slug)
+    slug = slug.lower()
+    slug = re.sub("_(.)", lambda match: ' ' + match.group(1).upper(), slug)
+    slug = slug[0].upper() + slug[1:]
+    return slug
+
 slugmap_file = Path("slugmap.csv")
 slugmap = dict()
 if args.filename:
@@ -61,7 +77,11 @@ if args.filename:
         for user, username, slug, link, body in projects:
             if args.project_name:
                 slug = user
-            slugmap.writerow([user, username, slug, slug, link])
+                name = args.project_name
+            else:
+                slug = slugify(slug)
+                name = nameify(slug)
+            slugmap.writerow([user, username, slug, name, link])
     exit(0)
 
 with open(slugmap_file) as f:
