@@ -7,6 +7,7 @@ parser = argparse.ArgumentParser(
     description='Upload project grades to Canvas',
 )
 parser.add_argument('--check', action='store_true')
+parser.add_argument('--dry-run', action='store_true')
 parser.add_argument('--test', action='store_true')
 parser.add_argument('--both', action='store_true')
 parser.add_argument('--baseurl', default="canvas.pdx.edu")
@@ -20,6 +21,7 @@ with open("students.csv", "r") as f:
 
 grades = dict()
 comments = dict()
+gradenames = dict()
 projects = list(Path("graded").iterdir())
 if args.both:
     projects += list(Path("both").iterdir())
@@ -43,16 +45,29 @@ for project in projects:
         sid = index[n]
         grades[sid] = score
         comments[sid] = body
+        gradenames[sid] = n
 
 if args.check:
     exit(0)
 
 assert args.courseid and args.asgid, "need course and assignment ids"
 
-grader = canvasgrader.CanvasGrader(
-    args.baseurl,
-    args.courseid,
-)
+
+class DryrunGrader:
+    def grade_assignment(self, asigd, grades, comments):
+        for sid in grades:
+            print("---")
+            print(gradenames[sid], grades[sid])
+            print(comments[sid])
+
+if args.dry_run:
+    grader = DryrunGrader()
+else:
+    grader = canvasgrader.CanvasGrader(
+        args.baseurl,
+        args.courseid,
+    )
+
 if args.test:
     sid = list(grades.keys())[0]
     grades = {sid : grades[sid]}

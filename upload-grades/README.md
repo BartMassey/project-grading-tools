@@ -15,4 +15,5 @@
       nothing.
     * Find course ID in course URL
     * Find assignment ID in assignment URL
-    * Run `upload-grades.py [--both] <courseid> <asgid>`
+    * Run `upload-grades.py [--both] --dry-run <courseid> <asgid>`
+    * If everything looks OK, run again without `--dry-run`
